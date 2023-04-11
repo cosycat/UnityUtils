@@ -94,7 +94,7 @@ namespace UnityUtils
 
     /// <summary>
     /// All the properties that can potentially be changed in a material to highlight it.
-    /// Extend this struct to add more properties. Don't forget to 
+    /// Extend this struct to add more properties.
     /// </summary>
     [Serializable]
     internal struct MaterialState
@@ -103,7 +103,7 @@ namespace UnityUtils
 
         [SerializeField] private Material material;
     
-        [Header("Highlighting Relevant Properties")]
+        [Header("Properties used for highlighting")]
         public bool changeEmission;
         public bool changeColor;
 
