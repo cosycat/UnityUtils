@@ -5,6 +5,8 @@ namespace UnityUtils.StateManager
 {
     public abstract class StateManager : MonoBehaviour
     {
+        [SerializeField] protected State initialState;
+
         private State _currentState;
 
         /// <summary>
@@ -18,9 +20,9 @@ namespace UnityUtils.StateManager
             set
             {
                 BeforeStateChangeEvent?.Invoke(this, new StateChangeEventArgs(_currentState, value));
-                _currentState.OnStateStop();
+                if (_currentState != null) _currentState.OnStateExit();
                 _currentState = value;
-                _currentState.OnStateStart();
+                if (_currentState != null) _currentState.OnStateEnter();
                 AfterStateChangeEvent?.Invoke(this, new StateChangeEventArgs(_currentState, value));
             }
         }
@@ -34,11 +36,22 @@ namespace UnityUtils.StateManager
         /// Event that gets invoked after the current state got changed
         /// </summary>
         public event EventHandler<StateChangeEventArgs> AfterStateChangeEvent;
+        
+        protected void Awake()
+        {
+            Debug.Log("StateManager Awake");
+            _currentState = initialState;
+        }
+
+        private void Start()
+        {
+            if (_currentState != null) _currentState.OnStateEnter();
+        }
 
         private void Update()
         {
             BeforeStateUpdate();
-            _currentState.OnStateUpdate();
+            if (_currentState != null) _currentState.OnStateUpdate();
             AfterStateUpdate();
         }
         
@@ -51,8 +64,7 @@ namespace UnityUtils.StateManager
         /// Gets called after the current state got updated
         /// </summary>
         protected virtual void AfterStateUpdate() {}
-        
-        
+
     }
 
     /// <summary>
@@ -75,25 +87,5 @@ namespace UnityUtils.StateManager
             OldState = oldState;
             NewState = newState;
         }
-    }
-
-    public abstract class State
-    {
-        
-        /// <summary>
-        /// Gets called whenever this state starts
-        /// </summary>
-        public abstract void OnStateStart();
-        
-        /// <summary>
-        /// Gets called whenever this state stops, before it is replaced by another state
-        /// </summary>
-        public abstract void OnStateStop();
-        
-        /// <summary>
-        /// Gets called every frame while this state is the current state
-        /// </summary>
-        public abstract void OnStateUpdate();
-    
     }
 }
