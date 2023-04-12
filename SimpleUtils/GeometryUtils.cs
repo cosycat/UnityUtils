@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UnityUtils
+namespace UnityUtils.SimpleUtils
 {
     public static class GeometryUtils
     {

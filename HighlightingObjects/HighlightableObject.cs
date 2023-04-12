@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityUtils
+namespace UnityUtils.HighlightingObjects
 {
     /// <summary>
     /// Highlights a game object by changing its materials.
