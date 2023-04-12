@@ -11,6 +11,52 @@ namespace UnityUtils.StateManager
         /// The state manager that manages this state
         /// </summary>
         public StateManager SM { get; private set; }
+        
+        /// <summary>
+        /// Whether this state is the current state of its state manager
+        /// </summary>
+        public bool IsCurrentState => SM.CurrentState == this;
+
+        /// <summary>
+        /// Tries to get the state component in the next sibling of this state.
+        /// </summary>
+        /// <param name="nextState"> The state component in the next sibling, or null if there is no next sibling or the next sibling does not have a state component </param>
+        /// <returns> Whether the next sibling has a state component </returns>
+        public bool TryGetNextState(out State nextState)
+        {
+            if (transform.GetSiblingIndex() == transform.parent.childCount - 1)
+            {
+                nextState = null;
+                return false;
+            }
+
+            var nextSibling = transform.parent.transform.GetChild(transform.GetSiblingIndex() + 1);
+            nextState = nextSibling.TryGetComponent(out State state) ? state : null;
+            return state != null;
+        }
+        
+        /// <summary>
+        /// Sets the next state from <see cref="TryGetNextState"/> as the current state of the state manager.
+        /// </summary>
+        /// <exception cref="Exception"> Throws an exception if there is no next state </exception>
+        public void SetNextState()
+        {
+            if (!TrySetNextState())
+                throw new Exception("There is no next state");
+        }
+
+        /// <summary>
+        /// Tries to set the next state from <see cref="TryGetNextState"/> as the current state of the state manager.
+        /// </summary>
+        /// <returns> True if there is a next state, which was set as the current state. False if there is no next state </returns>
+        public bool TrySetNextState()
+        {
+            if (!TryGetNextState(out var nextState))
+                return false;
+
+            SM.CurrentState = nextState;
+            return true;
+        }
 
         /// <summary>
         /// Gets called whenever this state starts
@@ -26,6 +72,9 @@ namespace UnityUtils.StateManager
         /// Gets called every frame while this state is active
         /// </summary>
         protected internal abstract void OnStateUpdate();
+        
+        protected internal virtual void OnStateAwake() { }
+        protected internal virtual void OnStateStart() { }
 
         private void Update()
         {
@@ -58,6 +107,12 @@ namespace UnityUtils.StateManager
                     SM = sm;
                 }
             }
+            OnStateAwake();
+        }
+        
+        private void Start()
+        {
+            OnStateStart();
         }
     }
 }
