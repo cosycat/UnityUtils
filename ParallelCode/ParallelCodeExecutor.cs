@@ -21,6 +21,7 @@ namespace UnityUtils.ParallelCode {
         private bool _destroyOnFail;
         private bool _destroyOnTimeout;
         private bool _useLateUpdate;
+        private bool _logExceptions;
 
         private bool _hasSucceeded = false;
         private bool _hasFailed = false;
@@ -49,12 +50,14 @@ namespace UnityUtils.ParallelCode {
         /// <param name="parent"> The parent of the new game object. </param>
         /// <param name="dontDestroyOnSceneChange"> If true, the game object will not be destroyed when the scene changes, using DontDestroyOnLoad. </param>
         /// <param name="useLateUpdate"> If true, the callbacks will be called in LateUpdate, otherwise in Update. </param>
+        /// <param name="startImmediately"> If true, the action will be executed immediately, otherwise it will be executed when StartThread is called. </param>
+        /// <param name="logExceptions"> If true, exceptions will be logged to the console using Debug.LogException. </param>
         /// <returns> The ParallelCodeExecutor component of the new game object. </returns>
         public static ParallelCodeExecutor ExecuteParallel(
                 Action action, Action onSuccess = null, Action onFail = null, Action onTimeout = null, float maxTime = -1,
                 bool destroyOnSuccess = true, bool destroyOnFail = true, bool destroyOnTimeout = true,
                 Transform parent = null, bool dontDestroyOnSceneChange = false,
-                bool useLateUpdate = true) {
+                bool useLateUpdate = true, bool startImmediately = true, bool logExceptions = true) {
             var go = new GameObject("ParallelCodeExecutor", typeof(ParallelCodeExecutor)) {
                 transform = {
                     parent = parent
@@ -71,27 +74,45 @@ namespace UnityUtils.ParallelCode {
             executor._destroyOnFail = destroyOnFail;
             executor._destroyOnTimeout = destroyOnTimeout;
             executor._useLateUpdate = useLateUpdate;
-            executor.Execute(action);
+            executor._logExceptions = logExceptions;
+            executor.Execute(action, startImmediately);
             return executor;
         }
 
-        private void Execute(Action action) {
+        /// <summary>
+        /// Starts the thread if it has not been started before.
+        ///
+        /// Uses ThreadState.Unstarted to check if the thread has been started.
+        /// </summary>
+        /// <returns> True if the thread has been started, false otherwise. </returns>
+        public bool StartThread() {
+            if (_thread.ThreadState != ThreadState.Unstarted) return false;
+            _thread.Start();
+            return true;
+        }
+
+        private void Execute(Action action, bool startImmediately) {
             _thread = new Thread(() => {
                 try {
                     action();
                     OnThreadSuccess();
                 }
                 catch (ThreadAbortException e) {
-                    Debug.LogException(e);
+                    if (_logExceptions)
+                        Debug.LogException(e);
                     // OnThreadTimeout() has already been called, that's why we're here
                 }
                 catch (Exception e) {
-                    Debug.LogException(e);
+                    if (_logExceptions)
+                        Debug.LogException(e);
                     OnThreadFail();
                 }
                 
             });
-            _thread.Start();
+            _startTime = Time.time;
+            if (startImmediately) {
+                StartThread();
+            }
         }
 
         private void OnThreadSuccess() {
