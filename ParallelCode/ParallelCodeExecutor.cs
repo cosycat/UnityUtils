@@ -19,6 +19,7 @@ namespace UnityUtils.ParallelCode {
         private float _maxTime;
         private bool _destroyOnSuccess;
         private bool _destroyOnFail;
+        private bool _destroyOnTimeout;
         private bool _useLateUpdate;
 
         private bool _hasSucceeded = false;
@@ -68,6 +69,7 @@ namespace UnityUtils.ParallelCode {
             executor._maxTime = maxTime;
             executor._destroyOnSuccess = destroyOnSuccess;
             executor._destroyOnFail = destroyOnFail;
+            executor._destroyOnTimeout = destroyOnTimeout;
             executor._useLateUpdate = useLateUpdate;
             executor.Execute(action);
             return executor;
@@ -125,7 +127,8 @@ namespace UnityUtils.ParallelCode {
                         Destroy(gameObject);
                 } else if (_hasTimedOut) {
                     _onTimeout?.Invoke();
-                    Destroy(gameObject);
+                    if (_destroyOnTimeout)
+                        Destroy(gameObject);
                 }
                 else {
                     Debug.LogError("This should never happen");
