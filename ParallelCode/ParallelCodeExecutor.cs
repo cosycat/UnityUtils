@@ -26,8 +26,17 @@ namespace UnityUtils.ParallelCode {
         private bool _hasSucceeded = false;
         private bool _hasFailed = false;
         private bool _hasTimedOut = false;
-        public bool HasFinished => _hasSucceeded || _hasFailed || _hasTimedOut;
-        
+        public bool HasFinished
+        {
+            get
+            {
+                lock (_threadLocker)
+                {
+                    return _hasSucceeded || _hasFailed || _hasTimedOut;
+                }
+            }
+        }
+
         private float _startTime;
         public float ElapsedTime => Time.time - _startTime;
         public float RemainingTime => _maxTime <= 0 ? float.PositiveInfinity : _maxTime - ElapsedTime;
