@@ -12,6 +12,14 @@ namespace UnityUtils.StateManager
         /// </summary>
         public StateManager SM { get; private set; }
         
+        [Tooltip("If set to -1, the state id will be the sibling index of this state in the state manager"),
+         SerializeField] private long stateId = -1;
+        
+        /// <summary>
+        /// The id of this state.
+        /// </summary>
+        public long StateId => stateId == -1 ? stateId = transform.GetSiblingIndex() : stateId;
+        
         /// <summary>
         /// Whether this state is the current state of its state manager
         /// </summary>
@@ -24,24 +32,16 @@ namespace UnityUtils.StateManager
         /// <returns> Whether the next sibling has a state component </returns>
         public bool TryGetNextState(out State nextState)
         {
-            if (transform.GetSiblingIndex() == transform.parent.childCount - 1)
-            {
-                nextState = null;
-                return false;
-            }
-
-            var nextSibling = transform.parent.transform.GetChild(transform.GetSiblingIndex() + 1);
-            nextState = nextSibling.TryGetComponent(out State state) ? state : null;
-            return state != null;
+            return SM.TryGetStateById(stateId +1, out nextState);
         }
         
         /// <summary>
         /// Sets the next state from <see cref="TryGetNextState"/> as the current state of the state manager.
         /// </summary>
         /// <exception cref="Exception"> Throws an exception if there is no next state </exception>
-        public void SetNextState()
+        public void SetNextState(bool requestOnly = false)
         {
-            if (!TrySetNextState())
+            if (!TrySetNextState(requestOnly))
                 throw new Exception("There is no next state");
         }
 
@@ -49,12 +49,15 @@ namespace UnityUtils.StateManager
         /// Tries to set the next state from <see cref="TryGetNextState"/> as the current state of the state manager.
         /// </summary>
         /// <returns> True if there is a next state, which was set as the current state. False if there is no next state </returns>
-        public bool TrySetNextState()
+        public bool TrySetNextState(bool requestOnly = false)
         {
             if (!TryGetNextState(out var nextState))
                 return false;
 
-            SM.CurrentState = nextState;
+            if (requestOnly)
+                SM.RequestStateChange(nextState);
+            else
+                SM.ChangeState(nextState);
             return true;
         }
 
