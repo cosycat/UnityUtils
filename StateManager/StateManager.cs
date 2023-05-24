@@ -32,18 +32,37 @@ namespace UnityUtils.StateManager
             if (CurrentState != null) CurrentState.OnStateEnter();
             AfterStateChangeEvent?.Invoke(this, new StateChangeEventArgs(CurrentState, newState));
         }
-        
+
         /// <summary>
         /// Get a state by its id.
         /// Searches all children of this state manager for a state with the given id.
         /// </summary>
         /// <param name="stateId"> The id of the state to get </param>
+        /// <param name="requestOnly"> Whether to only request the state change, without actually changing the state </param>
         /// <exception cref="Exception"> Throws an exception if no state with the given id was found </exception>
-        public void ChangeStateByID(long stateId)
+        public void ChangeStateByID(long stateId, bool requestOnly = false)
         {
             if (!TryGetStateById(stateId, out var state))
                 throw new Exception($"No state with id {stateId} found");
-            ChangeState(state);
+            if (requestOnly)
+            {
+                RequestStateChange(state);
+            }
+            else
+            {
+                ChangeState(state);
+            }
+        }
+        
+        /// <summary>
+        /// Change the current state to the next state by their ID.
+        /// Specifically, this will change the state to the state with the ID (CurrentStateId + 1).
+        /// </summary>
+        /// <param name="requestOnly"> Whether to only request the state change, without actually changing the state </param>
+        /// <exception cref="Exception"> Throws an exception if no state with an id of CurrentStateId + 1 was found </exception>
+        public void ChangeToNextState(bool requestOnly = false)
+        {
+            ChangeStateByID(CurrentStateId + 1, requestOnly);
         }
 
         /// <summary>
@@ -101,6 +120,8 @@ namespace UnityUtils.StateManager
         protected virtual void Awake()
         {
             Debug.Log("StateManager Awake");
+            if (initialState == null && !TryGetStateById(0, out initialState))
+                throw new Exception("No initial state set and no state with id 0 found");
             CurrentState = initialState;
         }
 
